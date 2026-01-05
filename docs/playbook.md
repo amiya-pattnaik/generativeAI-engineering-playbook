@@ -58,13 +58,7 @@ Practical guidance to ship reliable generative AI features for engineering/QA/pl
 - **Configs**: `OPENAI_API_KEY` optional; `OPENAI_MODEL` to change models; defaults to deterministic mock when unset.
 - **Extend**: add providers under `demo-app/src/providers/`; add new workflows by extending `routes/generate.js` and front-end form.
 
-## 10) Suggested interview storytelling
-- Show **demo locally** in mock mode; then flip `OPENAI_API_KEY` to show production readiness.
-- Walk through **architecture diagram** (sections 2–6) and how you enforce contracts/guardrails.
-- Present a **small eval set** and how you’d catch regressions.
-- Discuss **tradeoffs** you made (latency vs. quality, structured outputs, safety filters).
-
-## 11) Next improvements (pick per org)
+## 10) Next improvements (pick per org)
 - Add vector search + re-ranker; add tool calling for structured actions.
 - Integrate tracing (OpenTelemetry) and prompt capturing with redaction.
 - Expand evals with automatic scoring and bias detection.
