@@ -1,0 +1,19 @@
+{
+  "name": "generative-ai-demo-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "lint": "node --check src/server.js src/routes/generate.js src/routes/scenarios.js src/services/generator.js src/providers/openai.js scripts/run-scenarios.js",
+    "demo:scenario": "node scripts/run-scenarios.js scenarios/login-mfa.json",
+    "demo:scenarios": "node scripts/run-scenarios.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0"
+  }
+}

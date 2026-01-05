@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generative AI Demo — QA Test Plan</title>
+  <style>
+    :root { color-scheme: light; font-family: 'Segoe UI', sans-serif; background: #0b1021; color: #f5f7ff; }
+    body { margin: 0; padding: 32px; max-width: 960px; margin-inline: auto; }
+    h1 { margin-top: 0; }
+    .card { background: #111830; border: 1px solid #1f2740; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; }
+    textarea, input { width: 100%; border-radius: 8px; border: 1px solid #2a3554; background: #0b1021; color: #f5f7ff; padding: 10px; box-sizing: border-box; }
+    button { margin-top: 12px; padding: 12px 16px; border: none; border-radius: 10px; background: linear-gradient(135deg, #5dd4fb, #7b6dff); color: #0b1021; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    pre { background: #0b1021; border: 1px solid #1f2740; border-radius: 10px; padding: 12px; white-space: pre-wrap; word-break: break-word; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #1f2740; font-size: 12px; margin-left: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Generative AI QA Helper <span class="pill" id="mode-pill">mock mode</span></h1>
+    <p>Send a task + context to the API. It validates input, calls a generator (mock or provider), and returns structured JSON for test cases.</p>
+    <div class="row">
+      <div>
+        <label for="task">Task *</label>
+        <textarea id="task" rows="4">Create test cases for user login with MFA.</textarea>
+      </div>
+      <div>
+        <label for="context">Context</label>
+        <textarea id="context" rows="4">- Login supports email + password
+- MFA via TOTP only
+- Lockout after 5 failed attempts</textarea>
+      </div>
+    </div>
+    <label for="scenario-select">Load scenario</label>
+    <select id="scenario-select" style="width:100%; padding:10px; border-radius:8px; border:1px solid #2a3554; background:#0b1021; color:#f5f7ff;">
+      <option value="">Manual entry</option>
+    </select>
+    <button id="submit">Generate test plan</button>
+    <div id="status" style="margin-top:10px; opacity:0.8;"></div>
+    <h3>Result</h3>
+    <pre id="result">Waiting for response...</pre>
+  </div>
+
+  <script>
+    const resultEl = document.getElementById('result');
+    const statusEl = document.getElementById('status');
+    const pillEl = document.getElementById('mode-pill');
+    const scenarioSelect = document.getElementById('scenario-select');
+
+    async function fetchMode() {
+      try {
+        const res = await fetch('/api/generate', { method: 'OPTIONS' });
+        const mode = res.headers.get('X-Generator-Mode');
+        if (mode) pillEl.textContent = mode;
+      } catch (e) {
+        pillEl.textContent = 'unknown';
+      }
+    }
+
+    async function fetchScenarios() {
+      try {
+        const res = await fetch('/api/scenarios');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.scenarios) return;
+        data.scenarios.forEach((s) => {
+          const opt = document.createElement('option');
+          opt.value = s.name;
+          opt.textContent = s.name;
+          opt.dataset.task = s.task || '';
+          opt.dataset.context = s.context || '';
+          scenarioSelect.appendChild(opt);
+        });
+      } catch (e) {
+        // ignore silently for demo
+      }
+    }
+
+    scenarioSelect.addEventListener('change', (e) => {
+      const opt = e.target.selectedOptions[0];
+      if (!opt || !opt.dataset) return;
+      const task = opt.dataset.task || '';
+      const context = opt.dataset.context || '';
+      if (task) document.getElementById('task').value = task;
+      if (context) document.getElementById('context').value = context;
+    });
+
+    async function generate() {
+      const task = document.getElementById('task').value;
+      const context = document.getElementById('context').value;
+      const button = document.getElementById('submit');
+      button.disabled = true;
+      statusEl.textContent = 'Sending...';
+      resultEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, context })
+        });
+
+        const data = await res.json();
+        statusEl.textContent = res.ok ? `✅ ${data.model} in ${data.latency_ms} ms (run: ${data.runId})` : `❌ ${data.error || 'error'}`;
+        resultEl.textContent = JSON.stringify(data.completion || data, null, 2);
+      } catch (err) {
+        statusEl.textContent = 'Network error';
+        resultEl.textContent = err.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById('submit').addEventListener('click', generate);
+    fetchMode();
+    fetchScenarios();
+  </script>
+</body>
+</html>

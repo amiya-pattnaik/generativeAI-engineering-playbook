@@ -1,0 +1,6 @@
+{
+  "name": "login-mfa",
+  "task": "Create test cases for user login with email/password and TOTP-based MFA.",
+  "context": "- Login supports email + password\n- MFA via TOTP only\n- Lockout after 5 failed attempts\n- Session timeout after 15 minutes idle",
+  "notes": "Baseline scenario to demo structured outputs and mock vs provider modes."
+}

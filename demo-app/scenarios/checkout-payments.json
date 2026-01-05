@@ -1,0 +1,5 @@
+{
+  "name": "checkout-payments",
+  "task": "Generate test cases for checkout with credit card and promo codes.",
+  "context": "- Visa/MC only\n- Promo codes can't stack\n- 3DS required for high-value orders"
+}
