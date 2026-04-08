@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import generateRouter from './routes/generate.js';
+import generateV2Router from './routes/generate-v2.js';
 import scenariosRouter from './routes/scenarios.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +19,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
 
 app.use('/api/generate', generateRouter);
+app.use('/api/v2/generate', generateV2Router);
 app.use('/api/scenarios', scenariosRouter);
 
 // Serve static front-end

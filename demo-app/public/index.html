@@ -35,6 +35,11 @@
 - Lockout after 5 failed attempts</textarea>
       </div>
     </div>
+    <label for="engine-select">Engine</label>
+    <select id="engine-select" style="width:100%; padding:10px; border-radius:8px; border:1px solid #2a3554; background:#0b1021; color:#f5f7ff;">
+      <option value="manual">manual</option>
+      <option value="langchain">langchain v2</option>
+    </select>
     <label for="scenario-select">Load scenario</label>
     <select id="scenario-select" style="width:100%; padding:10px; border-radius:8px; border:1px solid #2a3554; background:#0b1021; color:#f5f7ff;">
       <option value="">Manual entry</option>
@@ -50,12 +55,19 @@
     const statusEl = document.getElementById('status');
     const pillEl = document.getElementById('mode-pill');
     const scenarioSelect = document.getElementById('scenario-select');
+    const engineSelect = document.getElementById('engine-select');
+
+    function currentEndpoint() {
+      return engineSelect.value === 'langchain' ? '/api/v2/generate' : '/api/generate';
+    }
 
     async function fetchMode() {
       try {
-        const res = await fetch('/api/generate', { method: 'OPTIONS' });
+        const res = await fetch(currentEndpoint(), { method: 'OPTIONS' });
         const mode = res.headers.get('X-Generator-Mode');
-        if (mode) pillEl.textContent = mode;
+        if (mode) {
+          pillEl.textContent = `${engineSelect.value === 'langchain' ? 'langchain v2' : 'manual'} • ${mode}`;
+        }
       } catch (e) {
         pillEl.textContent = 'unknown';
       }
@@ -89,6 +101,10 @@
       if (context) document.getElementById('context').value = context;
     });
 
+    engineSelect.addEventListener('change', () => {
+      fetchMode();
+    });
+
     async function generate() {
       const task = document.getElementById('task').value;
       const context = document.getElementById('context').value;
@@ -98,14 +114,17 @@
       resultEl.textContent = '';
 
       try {
-        const res = await fetch('/api/generate', {
+        const endpoint = currentEndpoint();
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ task, context })
         });
 
         const data = await res.json();
-        statusEl.textContent = res.ok ? `✅ ${data.model} in ${data.latency_ms} ms (run: ${data.runId})` : `❌ ${data.error || 'error'}`;
+        statusEl.textContent = res.ok
+          ? `✅ ${data.engine || engineSelect.value} • ${data.model} • ${data.mode} • ${data.latency_ms} ms`
+          : `❌ ${data.error || 'error'}`;
         resultEl.textContent = JSON.stringify(data.completion || data, null, 2);
       } catch (err) {
         statusEl.textContent = 'Network error';

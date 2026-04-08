@@ -1,12 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { generateTestPlan } from '../src/services/generator.js';
+import { generateTestPlanLangChain } from '../src/services/generator-langchain.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const mode = process.env.OPENAI_API_KEY ? 'provider' : 'mock';
 const scenariosArg = process.argv.slice(2);
 const scenariosDir = path.join(__dirname, '../scenarios');
 const reportsDir = path.join(__dirname, '../reports');
@@ -29,18 +28,39 @@ function loadScenarios(paths) {
     });
 }
 
+function renderMarkdown(run) {
+  const header = [
+    `# Scenario: ${run.scenario}`,
+    '',
+    `- Engine: ${run.engine}`,
+    `- Mode: ${run.mode}`,
+    `- Model: ${run.model}`,
+    `- Latency: ${run.latency_ms} ms`,
+    `- Task: ${run.task}`,
+    '- Context:',
+    '',
+    run.context,
+    ''
+  ].join('\n');
+
+  return `${header}## Completion\n\n\`\`\`json\n${JSON.stringify(run.completion, null, 2)}\n\`\`\`\n`;
+}
+
 async function runScenario(filePath) {
   const raw = fs.readFileSync(filePath, 'utf-8');
   const scenario = JSON.parse(raw);
   const start = Date.now();
-  const result = await generateTestPlan({ task: scenario.task, context: scenario.context });
+  const result = await generateTestPlanLangChain({
+    task: scenario.task,
+    context: scenario.context
+  });
   const latencyMs = Date.now() - start;
 
   const run = {
-    scenario: scenario.name || path.basename(filePath, '.json'),
-    engine: 'manual',
+    scenario: `${scenario.name || path.basename(filePath, '.json')}-langchain-v2`,
+    engine: 'langchain',
     model: result.model,
-    mode,
+    mode: result.mode,
     latency_ms: latencyMs,
     completion: result.completion,
     task: scenario.task,
@@ -52,17 +72,12 @@ async function runScenario(filePath) {
   fs.writeFileSync(path.join(reportsDir, `${baseName}.json`), JSON.stringify(run, null, 2));
   fs.writeFileSync(path.join(reportsDir, `${baseName}.md`), renderMarkdown(run));
 
-  console.log(`✓ ${run.scenario} (${mode}) -> ${result.model} in ${latencyMs} ms`);
-}
-
-function renderMarkdown(run) {
-  const header = `# Scenario: ${run.scenario}\n\n- Engine: ${run.engine}\n- Mode: ${run.mode}\n- Model: ${run.model}\n- Latency: ${run.latency_ms} ms\n- Task: ${run.task}\n- Context:\n\n${run.context}\n\n`;
-  const completion = JSON.stringify(run.completion, null, 2);
-  return `${header}## Completion\n\n\n\`\`\`json\n${completion}\n\`\`\``;
+  console.log(`✓ ${run.scenario} (${run.mode}) -> ${run.model} in ${latencyMs} ms`);
 }
 
 (async () => {
   const files = loadScenarios(scenariosArg);
+
   if (files.length === 0) {
     console.error('No scenarios found. Add .json files to demo-app/scenarios');
     process.exit(1);

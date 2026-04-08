@@ -2,6 +2,10 @@
 
 Small, runnable demo that shows a generative AI workflow for engineering/QA/platform around a simple web app. Runs locally with a mock model or can call OpenAI if you add a key. Mirrors the style of `agentic-engineering-playbook` so you can demo both agentic and generative patterns side-by-side.
 
+This repo now supports two paths:
+- `manual`: plain Node.js prompt builder + direct provider call or mock mode.
+- `langchain v2`: LangChain prompt + structured output path for framework-backed comparison.
+
 ## Concept Primer: What Is Generative AI?
 Generative AI uses large language models to produce new content (for example test cases, summaries, plans) from prompts. In this repo, the model generates structured QA artifacts from a `task + context` input.
 
@@ -53,6 +57,7 @@ Avoid or augment it when:
 - The generator returns **test cases** (title, steps, expected result, risk) in JSON; the server validates/parses and the UI renders them.
 - You can swap in other providers or plug in retrieval/context builders without changing the UI.
 - The UI includes a **scenario picker** that pulls tasks/contexts from `demo-app/scenarios/*.json` via `/api/scenarios`.
+- The UI also includes an **engine selector** so you can switch between the manual implementation and the LangChain-backed v2 flow.
 
 ## ASCII Diagram
 ```text
@@ -75,6 +80,26 @@ POST /api/generate  --->  Validate Input
    |                         |
    v                         v
 UI Render <--- Parse/Guard/Normalize Output
+```
+
+LangChain v2 path:
+```text
+User (UI)
+   |
+   v
+POST /api/v2/generate  --->  Validate Input
+   |                             |
+   |                             v
+   |                   ChatPromptTemplate
+   |                             |
+   |                             v
+   |                ChatOpenAI.withStructuredOutput(...)
+   |                             |
+   |                             v
+   |                     Structured JSON
+   |                             |
+   v                             v
+UI Render <----------------- Normalized Response
 ```
 
 ## Prompt + Output Contract
@@ -107,6 +132,12 @@ Use OpenAI instead of mock (optional):
 - Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) in `.env`.
 - The server switches to provider mode and requests JSON-formatted completions.
 
+Use LangChain v2 (optional):
+- Set `OPENAI_API_KEY`.
+- Select `langchain v2` in the browser engine dropdown.
+- Or run `npm run demo:scenario:v2` / `npm run demo:scenarios:v2`.
+- LangChain v2 is provider-backed only; if no key is set, it returns a safe `provider_required` note instead of mock content.
+
 Other LLM providers:
 - OpenAI is integrated out-of-the-box.
 - You can connect Gemini, Claude, or other providers by adding an adapter in `demo-app/src/providers/` and wiring provider selection in `src/services/generator.js`.
@@ -119,10 +150,12 @@ Scenario picker:
 - `docs/playbook.md` — detailed generative AI engineering playbook (architecture, prompting, guardrails, evals, ops).
 - `demo-app/src/server.js` — Express server, static UI, wiring.
 - `demo-app/src/routes/generate.js` — input validation, timing, mode detection, responses.
+- `demo-app/src/routes/generate-v2.js` — LangChain-backed generation route for framework comparison.
 - `demo-app/src/routes/scenarios.js` — serves scenario metadata for the UI picker.
 - `demo-app/src/services/generator.js` — prompt builder, provider vs mock selection, JSON parsing guardrail.
+- `demo-app/src/services/generator-langchain.js` — LangChain prompt template + structured output path.
 - `demo-app/src/providers/openai.js` — thin fetch client with `response_format: json_object`.
-- `demo-app/public/index.html` — minimal UI to submit task/context and render structured JSON.
+- `demo-app/public/index.html` — minimal UI with scenario picker and engine selector.
 - `.env.example` — sample env vars; `.gitignore` keeps secrets and node_modules out.
 
 ## Extend quickly
@@ -130,6 +163,11 @@ Scenario picker:
 - Add workflows (for example PR review helper, incident summarizer) as new routes + small UI forms.
 - Layer evals by scripting golden prompts against `/api/generate` and storing outputs/scores.
 - Add more scenarios to drive demos/evals; reports are generated via the CLI (see `demo-app/README.md`).
+
+## Compare Manual vs LangChain v2
+- `manual` is the best path to explain fundamentals: prompt shape, JSON guardrails, mock fallback, and thin provider integration.
+- `langchain v2` is the better path to show framework usage: `ChatPromptTemplate`, `ChatOpenAI`, and schema-based structured output.
+- Keeping both paths in one repo gives you a stronger interview story: fundamentals first, framework second.
 
 ## Limitations
 - Outputs can still be plausible-but-wrong without external grounding.

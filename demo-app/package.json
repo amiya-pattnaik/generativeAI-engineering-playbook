@@ -6,14 +6,19 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "NODE_ENV=production node src/server.js",
-    "lint": "node --check src/server.js src/routes/generate.js src/routes/scenarios.js src/services/generator.js src/providers/openai.js scripts/run-scenarios.js",
+    "lint": "node --check src/server.js src/routes/generate.js src/routes/generate-v2.js src/routes/scenarios.js src/services/generator.js src/services/generator-langchain.js src/providers/openai.js scripts/run-scenarios.js scripts/run-scenarios-v2.js",
     "demo:scenario": "node scripts/run-scenarios.js scenarios/login-mfa.json",
-    "demo:scenarios": "node scripts/run-scenarios.js"
+    "demo:scenarios": "node scripts/run-scenarios.js",
+    "demo:scenario:v2": "node scripts/run-scenarios-v2.js scenarios/login-mfa.json",
+    "demo:scenarios:v2": "node scripts/run-scenarios-v2.js"
   },
   "dependencies": {
+    "@langchain/openai": "^1.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "morgan": "^1.10.0"
+    "langchain": "^1.3.1",
+    "morgan": "^1.10.0",
+    "zod": "^4.3.6"
   }
 }

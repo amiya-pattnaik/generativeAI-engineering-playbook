@@ -1,9 +1,9 @@
 import express from 'express';
-import { generateTestPlan } from '../services/generator.js';
+import { generateTestPlanLangChain } from '../services/generator-langchain.js';
 
 const router = express.Router();
 
-const generatorMode = process.env.OPENAI_API_KEY ? 'provider mode' : 'mock mode';
+const generatorMode = process.env.OPENAI_API_KEY ? 'provider mode' : 'provider required';
 
 router.options('/', (req, res) => {
   res.set('X-Generator-Mode', generatorMode);
@@ -19,18 +19,21 @@ router.post('/', async (req, res) => {
 
   try {
     const start = Date.now();
-    const result = await generateTestPlan({ task: task.trim(), context: (context || '').trim() });
+    const result = await generateTestPlanLangChain({
+      task: task.trim(),
+      context: (context || '').trim()
+    });
 
     res.json({
       runId: `run_${start}`,
       model: result.model,
       latency_ms: Date.now() - start,
       completion: result.completion,
-      mode: generatorMode,
-      engine: 'manual'
+      mode: result.mode || generatorMode,
+      engine: 'langchain'
     });
   } catch (err) {
-    console.error('Generation error', err);
+    console.error('LangChain generation error', err);
     res.status(500).json({ error: 'generation_failed', detail: err.message });
   }
 });
