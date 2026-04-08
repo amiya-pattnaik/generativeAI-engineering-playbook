@@ -128,6 +128,10 @@ npm run dev                     # start API + static UI
 # open http://localhost:3000
 ```
 
+Manual vs framework path:
+- `manual`: original prompt builder with mock mode, JSON guardrails, and direct provider integration.
+- `langchain v2`: structured-output path using `ChatPromptTemplate` and `ChatOpenAI`.
+
 Use OpenAI instead of mock (optional):
 - Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) in `.env`.
 - The server switches to provider mode and requests JSON-formatted completions.
